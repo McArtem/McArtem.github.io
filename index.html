@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>McArtem - Hardcore Falling Letters</title>
+    <style>
+        * {
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0a0f1e 0%, #0a1525 100%);
+            font-family: 'Segoe UI', 'Courier New', monospace;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Главное меню */
+        .main-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a0f1e 0%, #0a1a2f 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: all 0.5s ease;
+        }
+
+        .menu-container {
+            background: rgba(10, 20, 30, 0.8);
+            backdrop-filter: blur(20px);
+            border-radius: 60px;
+            padding: 50px 80px;
+            text-align: center;
+            border: 2px solid rgba(255, 100, 50, 0.5);
+            box-shadow: 0 0 50px rgba(255, 100, 0, 0.3);
+            animation: menuGlow 2s ease infinite alternate;
+        }
+
+        @keyframes menuGlow {
+            from { box-shadow: 0 0 30px rgba(255, 100, 0, 0.3); border-color: rgba(255, 100, 50, 0.5); }
+            to { box-shadow: 0 0 60px rgba(255, 100, 0, 0.6); border-color: rgba(255, 150, 50, 0.8); }
+        }
+
+        .game-title {
+            font-size: 5rem;
+            font-weight: bold;
+            color: #ffaa66;
+            text-shadow: 0 0 20px #ff6600, 0 0 40px #ff3300;
+            margin-bottom: 20px;
+            letter-spacing: 8px;
+            animation: titlePulse 1.5s ease infinite;
+        }
+
+        @keyframes titlePulse {
+            0%, 100% { transform: scale(1); text-shadow: 0 0 20px #ff6600; }
+            50% { transform: scale(1.05); text-shadow: 0 0 40px #ffaa00; }
+        }
+
+        .subtitle {
+            color: #8bcbff;
+            font-size: 1.2rem;
+            margin-bottom: 40px;
+            letter-spacing: 2px;
+        }
+
+        .difficulty-section {
+            margin: 40px 0;
+        }
+
+        .difficulty-title {
+            color: #ffaa66;
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        .difficulty-buttons {
+            display: flex;
+            gap: 25px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .difficulty-btn {
+            background: linear-gradient(135deg, #1a2a3a, #0a1a2a);
+            border: 2px solid #4a6a8a;
+            padding: 15px 35px;
+            font-size: 1.4rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: white;
+            font-family: monospace;
+            min-width: 150px;
+        }
+
+        .difficulty-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+
+        .difficulty-btn.easy {
+            border-color: #4caf50;
+            color: #4caf50;
+        }
+
+        .difficulty-btn.easy:hover {
+            background: #4caf50;
+            color: white;
+            box-shadow: 0 0 20px #4caf50;
+        }
+
+        .difficulty-btn.medium {
+            border-color: #ff9800;
+            color: #ff9800;
+        }
+
+        .difficulty-btn.medium:hover {
+            background: #ff9800;
+            color: white;
+            box-shadow: 0 0 20px #ff9800;
+        }
+
+        .difficulty-btn.hard {
+            border-color: #f44336;
+            color: #f44336;
+        }
+
+        .difficulty-btn.hard:hover {
+            background: #f44336;
+            color: white;
+            box-shadow: 0 0 20px #f44336;
+        }
+
+        .info-text {
+            margin-top: 30px;
+            color: #6f9fbf;
+            font-size: 0.9rem;
+        }
+
+        /* Игровое поле */
+        .game-wrapper {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            display: none;
+        }
+
+        .game-area {
+            position: relative;
+            width: 1200px;
+            height: 800px;
+            background: linear-gradient(180deg, #0a1428 0%, #0a1a2f 100%);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+            overflow: hidden;
+            border: 2px solid #2a4a6a;
+        }
+
+        #gameCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .stats-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            z-index: 10;
+            pointer-events: none;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .stat-card {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            padding: 12px 24px;
+            border-radius: 50px;
+            border: 1px solid rgba(100, 200, 255, 0.3);
+            font-weight: bold;
+            font-size: 1.3rem;
+            font-family: monospace;
+            pointer-events: auto;
+        }
+
+        .score-box { color: #ffd966; }
+        .combo-box { color: #ff884d; transition: all 0.2s ease; }
+        .errors-box { color: #ff6666; }
+        .speed-box { color: #6eff9e; }
+        .multiplier-box { color: #ff66cc; }
+
+        .combo-active {
+            text-shadow: 0 0 10px #ff6600, 0 0 20px #ff3300;
+            animation: comboPulse 0.5s ease;
+        }
+
+        @keyframes comboPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #8ba5c9;
+            margin-right: 8px;
+        }
+
+        .stat-value {
+            font-size: 1.6rem;
+            font-weight: bold;
+        }
+
+        .back-menu-btn {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: #2b5f8a;
+            border: none;
+            font-size: 1rem;
+            font-weight: bold;
+            padding: 8px 20px;
+            border-radius: 40px;
+            color: white;
+            cursor: pointer;
+            font-family: monospace;
+            transition: 0.1s linear;
+            box-shadow: 0 5px 0 #00131f;
+            z-index: 10;
+            pointer-events: auto;
+        }
+
+        .restart-btn {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: #2b5f8a;
+            border: none;
+            font-size: 1rem;
+            font-weight: bold;
+            padding: 8px 20px;
+            border-radius: 40px;
+            color: white;
+            cursor: pointer;
+            font-family: monospace;
+            transition: 0.1s linear;
+            box-shadow: 0 5px 0 #00131f;
+            z-index: 10;
+            pointer-events: auto;
+        }
+
+        .restart-btn:active, .back-menu-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #00131f;
+        }
+
+        .red-flash {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 0, 0, 0.5);
+            pointer-events: none;
+            z-index: 999;
+            animation: flashRed 0.2s ease-out;
+        }
+
+        @keyframes flashRed {
+            0% { opacity: 0.8; }
+            100% { opacity: 0; }
+        }
+
+        .shake {
+            animation: shakeEffect 0.3s ease-in-out;
+        }
+
+        @keyframes shakeEffect {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
+        }
+
+        .combo-fire {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 998;
+            background: radial-gradient(circle at center, transparent 60%, rgba(255, 100, 0, 0.4) 100%);
+            animation: fireGlow 0.5s ease infinite alternate;
+        }
+
+        @keyframes fireGlow {
+            from { box-shadow: inset 0 0 20px rgba(255, 100, 0, 0.4); }
+            to { box-shadow: inset 0 0 60px rgba(255, 80, 0, 0.8); }
+        }
+
+        .combo-indicator {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 100, 0, 0.9);
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: white;
+            z-index: 10;
+            white-space: nowrap;
+            pointer-events: none;
+            font-family: monospace;
+            backdrop-filter: blur(4px);
+            display: none;
+            animation: pulse 0.5s ease infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.05); }
+        }
+
+        .game-over-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+            backdrop-filter: blur(5px);
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .game-over-text {
+            font-size: 3rem;
+            color: #ff6666;
+            text-shadow: 0 0 20px red;
+            font-weight: bold;
+        }
+
+        .game-over-score {
+            font-size: 1.5rem;
+            color: #ffaa66;
+        }
+
+        .message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            color: #ffaa66;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 1.2rem;
+            pointer-events: none;
+            z-index: 20;
+            white-space: nowrap;
+            font-family: monospace;
+            animation: messageFade 0.8s ease forwards;
+            font-weight: bold;
+        }
+
+        @keyframes messageFade {
+            0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -70%) scale(0.9); }
+        }
+        
+        .music-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.7);
+            padding: 8px 15px;
+            border-radius: 30px;
+            color: white;
+            font-size: 0.8rem;
+            cursor: pointer;
+            z-index: 1001;
+            font-family: monospace;
+            backdrop-filter: blur(5px);
+        }
+        
+        .warning {
+            position: absolute;
+            top: 100px;
+            right: 20px;
+            background: rgba(255, 50, 50, 0.8);
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            color: white;
+            pointer-events: none;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+
+<div class="music-toggle" id="musicToggle">🎵 МУЗЫКА: ВКЛ</div>
+
+<div class="main-menu" id="mainMenu">
+    <div class="menu-container">
+        <div class="game-title">MCARTEM</div>
+        <div class="subtitle">⚡ HARDCORE FALLING LETTERS ⚡</div>
+        
+        <div class="difficulty-section">
+            <div class="difficulty-title">ВЫБЕРИ УРОВЕНЬ СЛОЖНОСТИ</div>
+            <div class="difficulty-buttons">
+                <button class="difficulty-btn easy" data-difficulty="easy">🟢 EASY</button>
+                <button class="difficulty-btn medium" data-difficulty="medium">🟠 MEDIUM</button>
+                <button class="difficulty-btn hard" data-difficulty="hard">🔴 HARD</button>
+            </div>
+        </div>
+        
+        <div class="info-text">
+            📖 УСЛОЖНЕННЫЕ ПРАВИЛА:<br>
+            🎯 EASY: 10 ошибок | 3-4 буквы | Ускорение после комбо<br>
+            🎯 MEDIUM: 5 ошибок | 3-4 буквы | Буквы ускоряются каждые 10 очков<br>
+            🎯 HARD: 3 ошибки | 3-4 буквы | + бонусные "бомбы"<br>
+            🔥 Комбо из 5 = замедление | Комбо из 10 = множитель очков x2!<br>
+            💣 При ошибке теряется 2 очка комбо!
+        </div>
+    </div>
+</div>
+
+<div class="game-wrapper" id="gameWrapper">
+    <div class="game-area" id="gameArea">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div class="stats-panel">
+            <div class="stat-card score-box">
+                <span class="stat-label">🎯 СЧЕТ</span>
+                <span class="stat-value" id="scoreValue">0</span>
+            </div>
+            <div class="stat-card combo-box" id="comboCard">
+                <span class="stat-label">⚡ КОМБО</span>
+                <span class="stat-value" id="comboValue">0</span>
+            </div>
+            <div class="stat-card multiplier-box">
+                <span class="stat-label">✨ МНОЖИТЕЛЬ</span>
+                <span class="stat-value" id="multiplierValue">x1</span>
+            </div>
+            <div class="stat-card errors-box">
+                <span class="stat-label">❌ ОШИБКИ</span>
+                <span class="stat-value" id="errorsValue">0</span>
+            </div>
+            <div class="stat-card speed-box">
+                <span class="stat-label">🐌 СКОРОСТЬ</span>
+                <span class="stat-value" id="speedValue">100%</span>
+            </div>
+        </div>
+        
+        <button class="back-menu-btn" id="backMenuBtn">🏠 ГЛАВНОЕ МЕНЮ</button>
+        <button class="restart-btn" id="restartGameBtn">🔄 РЕСТАРТ</button>
+        <div class="combo-indicator" id="comboIndicator">🔥 КОМБО АКТИВИРОВАНО! 🔥</div>
+        <div class="warning" id="warningIndicator"></div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const gameArea = document.getElementById('gameArea');
+    const mainMenu = document.getElementById('mainMenu');
+    const gameWrapper = document.getElementById('gameWrapper');
+    
+    const DIFFICULTY_SETTINGS = {
+        easy: { 
+            maxErrors: 10, 
+            baseSpeed: 1.3, 
+            spawnDelay: 48, 
+            minLetters: 3, 
+            maxLetters: 4,
+            speedIncrease: 0.02,
+            name: 'EASY' 
+        },
+        medium: { 
+            maxErrors: 5, 
+            baseSpeed: 1.8, 
+            spawnDelay: 40, 
+            minLetters: 3, 
+            maxLetters: 4,
+            speedIncrease: 0.03,
+            name: 'MEDIUM' 
+        },
+        hard: { 
+            maxErrors: 3, 
+            baseSpeed: 2.2, 
+            spawnDelay: 32, 
+            minLetters: 3, 
+            maxLetters: 4,
+            speedIncrease: 0.04,
+            hasBombs: true,
+            name: 'HARD' 
+        }
+    };
+    
+    const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const COMBO_SLOW_THRESHOLD = 5;
+    const COMBO_MULTIPLIER_THRESHOLD = 10;
+    const COMBO_SLOW_FACTOR = 0.7;
+    const COMBO_MULTIPLIER = 2;
+    
+    let currentDifficulty = null;
+    let letters = [];
+    let score = 0;
+    let combo = 0;
+    let errors = 0;
+    let gameRunning = true;
+    let gameActive = false;
+    let animationId = null;
+    let currentSpeedMultiplier = 1.0;
+    let isComboActive = false;
+    let isMultiplierActive = false;
+    let baseGameSpeed = 1.8;
+    let spawnDelayFrames = 38;
+    let frameCount = 0;
+    let currentSpeedBonus = 1.0;
+    let scoreMultiplier = 1;
+    
+    let audioContext = null;
+    let musicPlaying = true;
+    let backgroundMusicInterval = null;
+    
+    let fireEffectActive = false;
+    
+    function initAudio() {
+        if (!audioContext) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioContext.state === 'suspended') {
+            audioContext.resume();
+        }
+        return audioContext;
+    }
+    
+    function playErrorSound() {
+        if (!musicPlaying) return;
+        try {
+            const ctx = initAudio();
+            const oscillator = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(ctx.destination);
+            oscillator.type = 'sawtooth';
+            oscillator.frequency.value = 440;
+            gainNode.gain.value = 0.25;
+            oscillator.start();
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.25);
+            oscillator.stop(ctx.currentTime + 0.25);
+        } catch(e) {}
+    }
+    
+    function playCorrectSound() {
+        if (!musicPlaying) return;
+        try {
+            const ctx = initAudio();
+            const oscillator = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(ctx.destination);
+            oscillator.type = 'sine';
+            oscillator.frequency.value = isMultiplierActive ? 1046.5 : 880;
+            gainNode.gain.value = 0.12;
+            oscillator.start();
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.12);
+            oscillator.stop(ctx.currentTime + 0.12);
+        } catch(e) {}
+    }
+    
+    function playComboSound() {
+        if (!musicPlaying) return;
+        try {
+            const ctx = initAudio();
+            for(let i = 0; i < 3; i++) {
+                const oscillator = ctx.createOscillator();
+                const gainNode = ctx.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(ctx.destination);
+                oscillator.type = 'square';
+                oscillator.frequency.value = 523.25 + i * 100;
+                gainNode.gain.value = 0.1;
+                oscillator.start(ctx.currentTime + i * 0.05);
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.15 + i * 0.05);
+                oscillator.stop(ctx.currentTime + 0.15 + i * 0.05);
+            }
+        } catch(e) {}
+    }
+    
+    function startBackgroundMusic() {
+        if (backgroundMusicInterval) clearInterval(backgroundMusicInterval);
+        if (!musicPlaying || !gameActive) return;
+        
+        let noteIndex = 0;
+        const melody = [523.25, 659.25, 783.99, 523.25, 587.33, 659.25, 783.99, 880];
+        
+        function playNote() {
+            if (!musicPlaying || !gameActive) return;
+            try {
+                const ctx = initAudio();
+                const oscillator = ctx.createOscillator();
+                const gainNode = ctx.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(ctx.destination);
+                oscillator.type = 'triangle';
+                oscillator.frequency.value = melody[noteIndex % melody.length];
+                gainNode.gain.value = 0.06;
+                oscillator.start();
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.18);
+                oscillator.stop(ctx.currentTime + 0.18);
+                noteIndex++;
+            } catch(e) {}
+        }
+        
+        const intervalTime = isComboActive ? 550 : 380;
+        playNote();
+        backgroundMusicInterval = setInterval(playNote, intervalTime);
+    }
+    
+    function stopBackgroundMusic() {
+        if (backgroundMusicInterval) {
+            clearInterval(backgroundMusicInterval);
+            backgroundMusicInterval = null;
+        }
+    }
+    
+    function updateMusicTempo() {
+        if (backgroundMusicInterval) {
+            stopBackgroundMusic();
+            startBackgroundMusic();
+        }
+    }
+    
+    function showMessage(text, isError = false) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'message';
+        msgDiv.textContent = text;
+        if (isError) msgDiv.style.color = '#ff6666';
+        else msgDiv.style.color = '#ffaa66';
+        gameArea.appendChild(msgDiv);
+        setTimeout(() => msgDiv.remove(), 800);
+    }
+    
+    function triggerMissEffect() {
+        const flash = document.createElement('div');
+        flash.className = 'red-flash';
+        document.body.appendChild(flash);
+        setTimeout(() => flash.remove(), 200);
+        
+        gameArea.classList.add('shake');
+        setTimeout(() => gameArea.classList.remove('shake'), 300);
+        
+        showMessage('💔 ПРОПУСК! -1 ошибка', true);
+        playErrorSound();
+        
+        if (combo > 0) {
+            combo = Math.max(0, combo - 2);
+            document.getElementById('comboValue').textContent = combo;
+            updateGameSpeed();
+        }
+    }
+    
+    function activateComboEffect() {
+        if (fireEffectActive) return;
+        fireEffectActive = true;
+        
+        const fireDiv = document.createElement('div');
+        fireDiv.className = 'combo-fire';
+        fireDiv.id = 'comboFireEffect';
+        document.body.appendChild(fireDiv);
+        
+        const comboIndicator = document.getElementById('comboIndicator');
+        comboIndicator.style.display = 'block';
+        
+        showMessage('🔥 КОМБО 5+! Буквы замедлились! 🔥', false);
+        
+        if (backgroundMusicInterval) {
+            updateMusicTempo();
+        }
+    }
+    
+    function deactivateComboEffect() {
+        const fireDiv = document.getElementById('comboFireEffect');
+        if (fireDiv) fireDiv.remove();
+        fireEffectActive = false;
+        document.getElementById('comboIndicator').style.display = 'none';
+        
+        if (backgroundMusicInterval) {
+            updateMusicTempo();
+        }
+    }
+    
+    function updateGameSpeed() {
+        const warningDiv = document.getElementById('warningIndicator');
+        
+        if (combo >= COMBO_MULTIPLIER_THRESHOLD && !isMultiplierActive) {
+            isMultiplierActive = true;
+            scoreMultiplier = COMBO_MULTIPLIER;
+            document.getElementById('multiplierValue').textContent = 'x2';
+            showMessage('✨ МНОЖИТЕЛЬ x2 АКТИВИРОВАН! ✨', false);
+            playComboSound();
+            warningDiv.textContent = '✨ x2 МНОЖИТЕЛЬ! ✨';
+            setTimeout(() => { if(warningDiv) warningDiv.textContent = ''; }, 2000);
+        } else if (combo < COMBO_MULTIPLIER_THRESHOLD && isMultiplierActive) {
+            isMultiplierActive = false;
+            scoreMultiplier = 1;
+            document.getElementById('multiplierValue').textContent = 'x1';
+        }
+        
+        if (combo >= COMBO_SLOW_THRESHOLD) {
+            if (!isComboActive) {
+                isComboActive = true;
+                currentSpeedMultiplier = COMBO_SLOW_FACTOR;
+                activateComboEffect();
+                const comboCard = document.getElementById('comboCard');
+                comboCard.classList.add('combo-active');
+                setTimeout(() => comboCard.classList.remove('combo-active'), 500);
+            }
+        } else {
+            if (isComboActive) {
+                isComboActive = false;
+                currentSpeedMultiplier = 1.0;
+                deactivateComboEffect();
+                showMessage('⚡ Комбо прервано...', false);
+            }
+        }
+        
+        const totalSpeed = baseGameSpeed * currentSpeedMultiplier * currentSpeedBonus;
+        const speedPercent = Math.round((currentSpeedMultiplier * currentSpeedBonus) * 100);
+        document.getElementById('speedValue').textContent = speedPercent + '%';
+        
+        for (let letter of letters) {
+            letter.speed = baseGameSpeed * currentSpeedMultiplier * currentSpeedBonus;
+        }
+    }
+    
+    function addBomb() {
+        if (!gameActive) return;
+        const x = 40 + Math.random() * (canvas.width - 80);
+        letters.push({
+            x: x,
+            y: 20,
+            char: '💣',
+            isBomb: true,
+            speed: baseGameSpeed * 1.2 * currentSpeedMultiplier * currentSpeedBonus
+        });
+    }
+    
+    function addNewLetter() {
+        if (!gameRunning || !gameActive) return;
+        
+        const targetCount = Math.floor(Math.random() * (DIFFICULTY_SETTINGS[currentDifficulty].maxLetters - 
+            DIFFICULTY_SETTINGS[currentDifficulty].minLetters + 1) + 
+            DIFFICULTY_SETTINGS[currentDifficulty].minLetters);
+        
+        if (letters.filter(l => !l.isBomb).length >= targetCount) return;
+        
+        const randomChar = LETTERS[Math.floor(Math.random() * LETTERS.length)];
+        const x = 40 + Math.random() * (canvas.width - 80);
+        const actualSpeed = baseGameSpeed * currentSpeedMultiplier * currentSpeedBonus;
+        
+        letters.push({
+            x: x,
+            y: 20,
+            char: randomChar,
+            speed: actualSpeed,
+            isBomb: false
+        });
+        
+        if (currentDifficulty === 'hard' && Math.random() < 0.15 && letters.filter(l => l.isBomb).length < 1) {
+            setTimeout(() => {
+                if (gameActive && gameRunning) addBomb();
+            }, 500);
+        }
+    }
+    
+    function handleKeyPress(event) {
+        if (!gameRunning || !gameActive) return;
+        
+        let pressedKey = event.key;
+        if (!pressedKey || pressedKey.length !== 1) return;
+        if (!/[a-zA-Z]/i.test(pressedKey)) return;
+        
+        const upperKey = pressedKey.toUpperCase();
+        
+        let foundIndex = -1;
+        let isBomb = false;
+        
+        for (let i = 0; i < letters.length; i++) {
+            if (letters[i].char === upperKey && !letters[i].isBomb) {
+                foundIndex = i;
+                break;
+            }
+        }
+        
+        if (foundIndex !== -1) {
+            const points = 10 * scoreMultiplier;
+            score += points;
+            combo++;
+            
+            document.getElementById('scoreValue').textContent = score;
+            document.getElementById('comboValue').textContent = combo;
+            
+            showMessage(`✓ ${upperKey} +${points}`, false);
+            playCorrectSound();
+            
+            if (score % 30 === 0 && currentDifficulty !== 'easy') {
+                currentSpeedBonus += DIFFICULTY_SETTINGS[currentDifficulty].speedIncrease;
+                updateGameSpeed();
+                showMessage(`⚠️ СКОРОСТЬ УВЕЛИЧЕНА! x${(currentSpeedBonus).toFixed(2)}`, true);
+            }
+            
+            letters.splice(foundIndex, 1);
+            updateGameSpeed();
+            event.preventDefault();
+        } else {
+            for (let i = 0; i < letters.length; i++) {
+                if (letters[i].isBomb) {
+                    foundIndex = i;
+                    isBomb = true;
+                    break;
+                }
+            }
+            
+            if (isBomb) {
+                showMessage('💣 БОМБА! -5 очков и сброс комбо! 💣', true);
+                score = Math.max(0, score - 5);
+                combo = 0;
+                document.getElementById('scoreValue').textContent = score;
+                document.getElementById('comboValue').textContent = combo;
+                playErrorSound();
+                letters.splice(foundIndex, 1);
+                updateGameSpeed();
+            } else {
+                if (combo > 0) {
+                    showMessage('❌ Не та буква! Комбо сброшено!', true);
+                    combo = 0;
+                    document.getElementById('comboValue').textContent = combo;
+                    updateGameSpeed();
+                } else {
+                    showMessage('❌ Неправильная буква!', true);
+                }
+                playErrorSound();
+            }
+            event.preventDefault();
+        }
+    }
+    
+    function updateLetters() {
+        if (!gameRunning || !gameActive) return;
+        
+        for (let i = 0; i < letters.length; i++) {
+            const letter = letters[i];
+            letter.y += letter.speed;
+            
+            if (letter.y + 35 >= canvas.height) {
+                letters.splice(i, 1);
+                i--;
+                
+                if (letter.isBomb) {
+                    errors += 2;
+                    showMessage('💣 БОМБА ВЗОРВАЛАСЬ! +2 ошибки! 💣', true);
+                } else {
+                    errors++;
+                }
+                
+                if (combo > 0) {
+                    combo = Math.max(0, combo - 3);
+                    document.getElementById('comboValue').textContent = combo;
+                    updateGameSpeed();
+                }
+                
+                document.getElementById('errorsValue').textContent = errors;
+                triggerMissEffect();
+                checkGameOver();
+            }
+        }
+    }
+    
+    function checkGameOver() {
+        const maxErrors = DIFFICULTY_SETTINGS[currentDifficulty].maxErrors;
+        if (errors >= maxErrors) {
+            gameRunning = false;
+            gameActive = false;
+            stopBackgroundMusic();
+            
+            const overlay = document.createElement('div');
+            overlay.className = 'game-over-overlay';
+            overlay.innerHTML = `
+                <div class="game-over-text">💀 GAME OVER 💀</div>
+                <div class="game-over-score">Ваш счет: ${score}</div>
+                <div class="game-over-score">Ошибок: ${errors}/${maxErrors}</div>
+                <div class="game-over-score">Макс. комбо: ${combo}</div>
+                <button class="restart-btn" style="position: static; margin-top: 20px;" id="gameOverRestart">🔄 ИГРАТЬ СНОВА</button>
+                <button class="back-menu-btn" style="position: static; margin-top: 10px;" id="gameOverMenu">🏠 В МЕНЮ</button>
+            `;
+            gameArea.appendChild(overlay);
+            
+            document.getElementById('gameOverRestart').addEventListener('click', () => {
+                overlay.remove();
+                restartGame();
+            });
+            document.getElementById('gameOverMenu').addEventListener('click', () => {
+                overlay.remove();
+                backToMenu();
+            });
+            
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+        }
+    }
+    
+    function draw() {
+        if (!ctx || !canvas) return;
+        
+        const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        gradient.addColorStop(0, '#0a1428');
+        gradient.addColorStop(1, '#0a1a2f');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        for (let letter of letters) {
+            const fontSize = 42;
+            
+            if (letter.isBomb) {
+                ctx.font = `${fontSize}px "Segoe UI Emoji"`;
+                ctx.fillStyle = '#ff4444';
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#ff0000';
+                ctx.fillText('💣', letter.x, letter.y);
+            } else {
+                const grad = ctx.createLinearGradient(letter.x - 15, letter.y - 15, letter.x + 15, letter.y + 15);
+                grad.addColorStop(0, '#ffdd99');
+                grad.addColorStop(1, '#ffaa66');
+                ctx.font = `bold ${fontSize}px "Fira Mono", "Courier New", monospace`;
+                ctx.fillStyle = grad;
+                ctx.fillText(letter.char, letter.x, letter.y);
+                ctx.strokeStyle = '#ff6600';
+                ctx.lineWidth = 2;
+                ctx.strokeText(letter.char, letter.x, letter.y);
+            }
+            
+            if (isComboActive && !letter.isBomb) {
+                ctx.shadowBlur = 12;
+                ctx.shadowColor = '#ff6600';
+                ctx.fillStyle = '#fff3e0';
+                ctx.fillText(letter.char, letter.x, letter.y);
+                ctx.shadowBlur = 0;
+            }
+        }
+        
+        const dangerY = canvas.height - 45;
+        ctx.beginPath();
+        ctx.moveTo(0, dangerY);
+        ctx.lineTo(canvas.width, dangerY);
+        ctx.strokeStyle = 'rgba(255, 50, 50, 0.8)';
+        ctx.lineWidth = 4;
+        ctx.stroke();
+        
+        ctx.font = 'bold 14px monospace';
+        ctx.fillStyle = '#ff8888';
+        ctx.fillText('⚠️ ОПАСНАЯ ЗОНА ⚠️', canvas.width - 180, dangerY - 8);
+    }
+    
+    function gameLoop() {
+        if (!gameRunning || !gameActive) return;
+        
+        updateLetters();
+        draw();
+        
+        frameCount++;
+        if (frameCount >= spawnDelayFrames) {
+            addNewLetter();
+            frameCount = 0;
+        }
+        
+        animationId = requestAnimationFrame(gameLoop);
+    }
+    
+    function resizeCanvas() {
+        const rect = gameArea.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+    }
+    
+    function startGame(difficulty) {
+        currentDifficulty = difficulty;
+        const settings = DIFFICULTY_SETTINGS[difficulty];
+        baseGameSpeed = settings.baseSpeed;
+        spawnDelayFrames = settings.spawnDelay;
+        currentSpeedBonus = 1.0;
+        scoreMultiplier = 1;
+        
+        letters = [];
+        score = 0;
+        combo = 0;
+        errors = 0;
+        currentSpeedMultiplier = 1.0;
+        isComboActive = false;
+        isMultiplierActive = false;
+        gameRunning = true;
+        gameActive = true;
+        frameCount = 0;
+        
+        document.getElementById('scoreValue').textContent = '0';
+        document.getElementById('comboValue').textContent = '0';
+        document.getElementById('errorsValue').textContent = '0';
+        document.getElementById('speedValue').textContent = '100%';
+        document.getElementById('multiplierValue').textContent = 'x1';
+        
+        deactivateComboEffect();
+        
+        resizeCanvas();
+        
+        stopBackgroundMusic();
+        startBackgroundMusic();
+        
+        for (let i = 0; i < 2; i++) {
+            setTimeout(() => {
+                if (gameActive && gameRunning) addNewLetter();
+            }, i * 400);
+        }
+        
+        if (animationId) cancelAnimationFrame(animationId);
+        animationId = requestAnimationFrame(gameLoop);
+        
+        showMessage(`🎮 ${settings.name} режим! Букв: 3-4 | Скорость растет! 🎮`, false);
+    }
+    
+    function restartGame() {
+        if (!currentDifficulty) return;
+        
+        const oldOverlay = document.querySelector('.game-over-overlay');
+        if (oldOverlay) oldOverlay.remove();
+        
+        startGame(currentDifficulty);
+    }
+    
+    function backToMenu() {
+        gameRunning = false;
+        gameActive = false;
+        if (animationId) {
+            cancelAnimationFrame(animationId);
+            animationId = null;
+        }
+        
+        stopBackgroundMusic();
+        
+        const overlay = document.querySelector('.game-over-overlay');
+        if (overlay) overlay.remove();
+        
+        deactivateComboEffect();
+        
+        gameWrapper.style.display = 'none';
+        mainMenu.style.display = 'flex';
+    }
+    
+    document.querySelectorAll('.difficulty-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const difficulty = btn.getAttribute('data-difficulty');
+            currentDifficulty = difficulty;
+            mainMenu.style.display = 'none';
+            gameWrapper.style.display = 'flex';
+            startGame(difficulty);
+        });
+    });
+    
+    document.getElementById('backMenuBtn').addEventListener('click', backToMenu);
+    document.getElementById('restartGameBtn').addEventListener('click', () => {
+        if (currentDifficulty) restartGame();
+    });
+    
+    const musicToggle = document.getElementById('musicToggle');
+    musicToggle.addEventListener('click', () => {
+        musicPlaying = !musicPlaying;
+        musicToggle.textContent = musicPlaying ? '🎵 МУЗЫКА: ВКЛ' : '🔇 МУЗЫКА: ВЫКЛ';
+        
+        if (!musicPlaying) {
+            stopBackgroundMusic();
+        } else if (gameActive) {
+            startBackgroundMusic();
+        }
+    });
+    
+    window.addEventListener('keydown', handleKeyPress);
+    window.addEventListener('resize', () => {
+        if (gameActive) resizeCanvas();
+    });
+    
+    gameWrapper.style.display = 'none';
+    mainMenu.style.display = 'flex';
+    
+    document.body.addEventListener('click', () => {
+        if (audioContext && audioContext.state === 'suspended') {
+            audioContext.resume();
+        }
+    }, { once: true });
+</script>
+</body>
+</html>
